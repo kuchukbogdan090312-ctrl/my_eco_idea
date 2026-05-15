@@ -65,7 +65,7 @@ else:
 
 # ------------------ DB ------------------
 
-conn = sqlite3.connect("game.db")
+conn = sqlite3.connect("game.db") # подключение к базе данных 
 cursor = conn.cursor()
 
 cursor.execute("""
@@ -75,7 +75,7 @@ CREATE TABLE IF NOT EXISTS users (
     username TEXT,
     points INTEGER DEFAULT 0
 )
-""")
+""") # работы с командами
 conn.commit()
 
 
@@ -84,10 +84,11 @@ CREATE TABLE IF NOT EXISTS used_codes (
     user_id INTEGER,
     code TEXT
 )
-""")
+""") # Создание таблицы
 
 conn.commit()
 
+# codes 
 ADMIN_CODE = "ICEADMIN777"
 
 admin_sessions = set()
@@ -104,33 +105,33 @@ CODES = {
 # ===== ADMIN / USERS HELPERS =====
 
 def is_admin(user_id: int) -> bool:
-    return user_id in admin_sessions
+    return user_id in admin_sessions # Проверка админа
 
 
-def get_user_by_username(username: str):
-    username = username.replace("@", "")
+def get_user_by_username(username: str): # Поиск пользователя по username
+    username = username.replace("@", "") # Удаление @
 
     cursor.execute("""
     SELECT user_id
     FROM users
     WHERE username = ?
-    """, (username,))
+    """, (username,))  # запрос в таблицу 
 
     return cursor.fetchone()
 
 
-def get_lang(user_id):
-    cursor.execute("SELECT lang FROM users WHERE user_id=?", (user_id,))
+def get_lang(user_id):  # Получает язык чела 
+    cursor.execute("SELECT lang FROM users WHERE user_id=?", (user_id,)) # Ищет язык по id
     row = cursor.fetchone()
     return row[0] if row else "ru"
 
 
-def set_lang(user_id, lang):
-    cursor.execute("UPDATE users SET lang=? WHERE user_id=?", (lang, user_id))
-    conn.commit()
+def set_lang(user_id, lang): #Смена языка 
+    cursor.execute("UPDATE users SET lang=? WHERE user_id=?", (lang, user_id))  # меняет тольео у нужного 
+    conn.commit()           # сохраняет изменения 
     
 
-def add_points(user_id, amount):
+def add_points(user_id, amount):  # Добавляет очки игроку
 
     cursor.execute("""
     UPDATE users
@@ -140,8 +141,8 @@ def add_points(user_id, amount):
 
     conn.commit()
 
-def ensure_user(user_id, username=None):
-    if username is None:
+def ensure_user(user_id, username=None): 
+    if username is None:    # Проверка юзера 
         username = "player"
 
     cursor.execute("""
@@ -152,13 +153,13 @@ def ensure_user(user_id, username=None):
         points
     )
     VALUES (?, 'ru', ?, 0)
-    """, (user_id, username))
+    """, (user_id, username))  
 
     cursor.execute("""
     UPDATE users
     SET username = ?
     WHERE user_id = ?
-    """, (username, user_id))
+    """, (username, user_id))    # Вставка значений
 
     conn.commit()
     
@@ -172,7 +173,7 @@ LANG_TEXT = {
     "en": {
         "lose": "💀 You lost!",
         "eco": "🌍 Eco tip:"
-    }
+    }       
 }
 
 ECO_TIPS = {
@@ -194,7 +195,7 @@ ECO_TIPS = {
         "Save water — turn off the tap while brushing teeth",
         "Plant trees or take care of plants 🌱"
     ]
-}
+}                # перевод + советы 
 
 def get_random_tip(lang):
     return random.choice(ECO_TIPS.get(lang, ECO_TIPS["ru"]))
@@ -278,14 +279,14 @@ TEXT = {
         "admin_x2": "🛠 Admin gave you x2 bonus for {minutes} minutes"
     }
 }
-
+# перевод 
 def t(user_id, key):
     lang = get_lang(user_id)
-    return TEXT.get(lang, TEXT["ru"]).get(key, key)
+    return TEXT.get(lang, TEXT["ru"]).get(key, key)    # переводит на ru en 
 
 
 # ------------------ GAME ------------------
-
+# настройки игры 
 game = {
     "ice": 100,
     "co2": 10,
@@ -297,14 +298,14 @@ game = {
 }
 
 
-def create_visual():
+def create_visual():            # подсчет 
     ice = int(game["ice"])
     co2 = int(game["co2"])
 
     def bar(value):
         blocks = value // 10
         blocks = max(0, min(10, blocks))
-        return "█" * blocks + "░" * (10 - blocks)
+        return "█" * blocks + "░" * (10 - blocks)        #шкала с02 и льда
 
     # статус
     if co2 < 30:
@@ -321,19 +322,19 @@ def create_visual():
         f"💨 CO2: {co2}\n"
         f"{bar(co2)}\n\n"
         f"⚠️ Status: {status}"
-    )
+    )            # интерфейс 
 
     return text
 
 # ------------------ KEYBOARDS ------------------
 def get_start_kb():
     return InlineKeyboardMarkup(inline_keyboard=[[
-        InlineKeyboardButton(text="🚀 start game", callback_data="start_game")
+        InlineKeyboardButton(text="🚀 start game", callback_data="start_game") # кнопка под соо (start)
     ]])
 
 def get_game_kb():
     return InlineKeyboardMarkup(inline_keyboard=[[
-        InlineKeyboardButton(text="❄️ cool ", callback_data="tap")
+        InlineKeyboardButton(text="❄️ cool ", callback_data="tap")        # кнопка под соо (охлождение)
     ]])
 
 def get_about_kb():
@@ -342,10 +343,10 @@ def get_about_kb():
             InlineKeyboardButton(text="🏆 top", callback_data="top"),
             InlineKeyboardButton(text="🔑 code", callback_data="code")
         ]
-    ])
+    ])                                                                        # кнопка под соо (about)
 # ------------------ START GAME ------------------
 
-@dp.callback_query(lambda c: c.data == "start_game")
+@dp.callback_query(lambda c: c.data == "start_game") # если нажата кнопка то он выдает начало игры и экран с следущими командами... 
 async def start_game(callback: types.CallbackQuery):
     game["ice"] = 100
     game["co2"] = 10
@@ -354,63 +355,64 @@ async def start_game(callback: types.CallbackQuery):
     game["active"] = True
     game["user_id"] = callback.from_user.id
 
-    text = create_visual()
+    text = create_visual()            # показывает лед баллы и т.д 
 
     
     game["msg_obj"] = await callback.message.answer(
         text,
         reply_markup=get_game_kb()
-    )
+    )                               # отправляет соо 
 
     await callback.message.delete()
 # ------------------ START ------------------
 
-@dp.message(Command("start"))
+@dp.message(Command("start"))                # начало через команду start 
 async def start(message: types.Message):
 
-    ensure_user(message.from_user.id, message.from_user.username)
+    ensure_user(message.from_user.id, message.from_user.username)         # обновляет юзера 
 
-    game["active"] = False
+    game["active"] = False            # игра сейчас не запущена
 
     await message.answer(
         t(message.from_user.id, "start"),
         reply_markup=get_start_kb()
-    )
+    )                        # риправляет соо из одной из папок на ru или en 
     
 # ------------------ LANG ------------------
 
-@dp.message(Command("lang"))
+@dp.message(Command("lang"))            # команда через /
 async def lang(message: types.Message):
     kb = InlineKeyboardMarkup(inline_keyboard=[
         [
             InlineKeyboardButton(text="🇷🇺 RU", callback_data="lang_ru"),
             InlineKeyboardButton(text="🇬🇧 EN", callback_data="lang_en")
         ]
-    ])
+    ])                    # кнопка под соо
 
     await message.answer(
         t(message.from_user.id, "lang"),
         reply_markup=kb   
-    )
+    )               # отправка соо из базы ru en 
 
-@dp.callback_query(lambda c: c.data.startswith("lang_"))
+@dp.callback_query(lambda c: c.data.startswith("lang_"))        #когда нажимашь на inline кнопку 
 async def set_language(callback: types.CallbackQuery):
     lang = callback.data.split("_")[1]
     set_lang(callback.from_user.id, lang)
 
     await callback.answer()
 
-    key = "lang_changed" if lang == "ru" else "lang_changed_en"
+    key = "lang_changed" if lang == "ru" else "lang_changed_en"        # выбор текста 
 
     await callback.message.edit_text(
         t(callback.from_user.id, key)
-    )
+    )                # язык из базы 
 
 # ------------------ TAP ------------------
 
-@dp.callback_query(lambda c: c.data == "tap")
+@dp.callback_query(lambda c: c.data == "tap")        # когда нажимашь на inline кнопку 
 async def tap(callback: types.CallbackQuery):
 
+#проверка нажатия + 2х нажатие (ивент)
     if not game["active"]:
         return await callback.answer(
             t(callback.from_user.id, "need_start")
@@ -437,7 +439,7 @@ async def tap(callback: types.CallbackQuery):
 
 
 # ------------------ BACKGROUND ------------------
-
+# если игрок проигрывает программа перепроверяет точно ли гг и он выдает техт и эко совет 
 async def background():
     while True:
         if game["active"]:
@@ -481,70 +483,72 @@ async def background():
 
         await asyncio.sleep(3)
 
-@dp.message(Command("start"))
+@dp.message(Command("start"))            # запуск с команды /
 async def cmd_start(message: types.Message):
     game["active"] = False # Сбрасываем старую игру если была
     await message.answer(t(message.from_user.id, "start"))
     reply_markup=get_start_kb()
 
-@dp.message(Command("code"))
+@dp.message(Command("code"))             # запуск с команды /
 async def use_code(message: types.Message):
 
-    args = message.text.split()
+    args = message.text.split() # проверка все ли написал для вписания кода 
 
     if len(args) < 2:
         return await message.answer(
-            t(message.from_user.id, "code_usage")
-        )
+            t(message.from_user.id, "code_usage")    
+        )    # впиши назв кода 
 
     code = args[1].upper()
 
     if code not in CODES:
         return await message.answer(
             t(message.from_user.id, "code_not_found")
-        )
+        )   # код не найден 
 
     cursor.execute("""
     SELECT *
     FROM used_codes
     WHERE user_id = ?
     AND code = ?
-    """, (message.from_user.id, code))
+    """, (message.from_user.id, code))   # использовал ли код?!?!?!!
 
     used = cursor.fetchone()
 
     if used:
         return await message.answer(
             t(message.from_user.id, "code_used")
-)
+)                # код использован 
 
 
     reward = CODES[code]
 
-    add_points(message.from_user.id, reward)
+    add_points(message.from_user.id, reward)    # выдает награду если не использовал 
 
     cursor.execute("""
     INSERT INTO used_codes (user_id, code)
     VALUES (?, ?)
-    """, (message.from_user.id, code))
+    """, (message.from_user.id, code))  # добавляет запись в таблицу 
 
-    conn.commit()
+    conn.commit()            # сохраняет 
 
     await message.answer(
         t(message.from_user.id, "code_success").format(
             reward=reward
         )
-    )
+    )        # если он выдался пишет заготовленый текст в ru en 
     
-@dp.message(Command("top"))
+@dp.message(Command("top"))             # запуск с команды /
 async def top(message: types.Message):
 
+# таблица лидеров + сам определяет где плеер больше получил льда и кидает его на место выше 
+    
     cursor.execute("""
     SELECT username, points
     FROM users
     ORDER BY points DESC
     LIMIT 10
-    """)
+    """) # лимит таблицы 10 
 
     players = cursor.fetchall()
 
@@ -563,7 +567,7 @@ async def top(message: types.Message):
 
         else:
             place = f"{i + 1}."
-
+            
         if i < len(players):
 
             username = players[i][0]
@@ -578,33 +582,34 @@ async def top(message: types.Message):
                 f"{place} "
                 f"@{username} — "
                 f"{points} 🧊\n"
-            )
+            ) # инфа о месте лбду и кто 
 
         else:
-            text += f"{place} ???\n"
+            text += f"{place} ???\n" # если нету чела то ???
 
     await message.answer(text)
 
-@dp.message(Command("help"))
+@dp.message(Command("help"))                 # запуск с команды /
 async def help(message: types.Message):
-    await message.answer(t(message.from_user.id, "help"))
+    await message.answer(t(message.from_user.id, "help"))   # показывает все команды
       
-@dp.message(Command("about"))
+@dp.message(Command("about"))                 # запуск с команды /
 async def about_cmd(message: types.Message):
     await message.answer(
         t(message.from_user.id, "about"),
         reply_markup=get_about_kb()
-    )
+    )          # выдает инфу о игре (что делать тута)
        
-@dp.callback_query(lambda c: c.data == "top")
+@dp.callback_query(lambda c: c.data == "top")                #когда нажимашь на inline кнопку 
 async def top_callback(callback: types.CallbackQuery):
 
+# таблица лидеров + сам определяет где плеер больше получил льда и кидает его на место выше
     cursor.execute("""
     SELECT username, points
     FROM users
     ORDER BY points DESC
     LIMIT 10
-    """)
+    """)    # лимит таблицы 10 
 
     players = cursor.fetchall()
 
@@ -635,23 +640,24 @@ async def top_callback(callback: types.CallbackQuery):
             username = username.replace("@", "")
 
             text += f"{place} @{username} — {points} 🧊\n"
-
+            # инфа о месте лбду и кто 
         else:
             text += f"{place} ???\n"
-
+            # если нету чела то ???
+    
     await callback.message.answer(text)
-    await callback.answer()
+    await callback.answer()       # срабатывает когда юзер нажимает на кнопку 
 
-@dp.callback_query(lambda c: c.data == "code")
+@dp.callback_query(lambda c: c.data == "code")                    #когда нажимашь на inline кнопку 
 async def code_button(callback: types.CallbackQuery):
 
     await callback.message.answer(
     t(callback.from_user.id, "enter_code")
-)
+)   #ввод кода 
 
     await callback.answer()
 
-@dp.message(Command("adminlogin"))
+@dp.message(Command("adminlogin"))                 # запуск с команды /
 async def admin_login(message: types.Message):
 
     args = message.text.split()
@@ -659,21 +665,21 @@ async def admin_login(message: types.Message):
     if len(args) < 2:
         return await message.answer(
             "/adminlogin code"
-        )
+        ) # админ код 
 
     if args[1] != ADMIN_CODE:
         return await message.answer(
             "❌ uncorect code"
-        )
+        ) # если админ код не правильный 
 
     admin_sessions.add(message.from_user.id)
 
     await message.answer(
         "🛠 admin mod revive"
-    )
+    ) # если правильно написал то он запускается 
 
 
-@dp.message(Command("adminexit"))
+@dp.message(Command("adminexit"))                     # запуск с команды /
 async def admin_exit(message: types.Message):
 
     if message.from_user.id in admin_sessions:
@@ -681,15 +687,16 @@ async def admin_exit(message: types.Message):
 
     await message.answer(
         "🚪 admin mod die"
-    )
+    ) # выход из админ панели 
 
 
-@dp.message(Command("admin"))
+@dp.message(Command("admin"))                     # запуск с команды /
 async def admin_panel(message: types.Message):
 
     if not is_admin(message.from_user.id):
         return
 
+    # админ панель с коммандами 
     text = (
         "🛠 ADMIN PANEL\n\n"
         "/give NUMBER\n"
@@ -703,40 +710,40 @@ async def admin_panel(message: types.Message):
     await message.answer(text)
 
 
-@dp.message(Command("give"))
+@dp.message(Command("give"))             # запуск с команды /
 async def give_points(message: types.Message):
 
     if not is_admin(message.from_user.id):
-        return
+        return # если он не админ то игнор 
 
     args = message.text.split()
 
     if len(args) < 3:
-        return await message.answer("/give @username NUMBER")
+        return await message.answer("/give @username NUMBER") # попровка если что то не написал 
 
     username = args[1]
-    amount = int(args[2])
+    amount = int(args[2]) # проверка 
 
-    user = get_user_by_username(username)
+    user = get_user_by_username(username) # ищет в базе игроков 
 
     if not user:
-        return await message.answer("❌ people is not found")
+        return await message.answer("❌ people is not found") # ненашел юзера  
 
     user_id = user[0]
 
-    add_points(user_id, amount)
+    add_points(user_id, amount) # добавляет поинты сколько он написал 
 
     try:
         await bot.send_message(
     user_id,
-    t(user_id, "admin_give").format(amount=amount)
-)
+    t(user_id, "admin_give").format(amount=amount) 
+) # текст 
     except:
         pass
 
-    await message.answer(f"➕ gived {amount} 🧊 people {username}")
+    await message.answer(f"➕ gived {amount} 🧊 people {username}") # текст админу и кому дал 
 
-@dp.message(Command("remove"))
+@dp.message(Command("remove"))                     # запуск с команды /
 async def remove_points(message: types.Message):
 
     if not is_admin(message.from_user.id):
@@ -747,17 +754,17 @@ async def remove_points(message: types.Message):
     if len(args) < 3:
         return await message.answer(
             "/remove @username NUMBER"
-        )
+        ) # поправка 
 
     username = args[1]
     amount = int(args[2])
 
-    user = get_user_by_username(username)
+    user = get_user_by_username(username)  # ищет в базе игроков 
 
     if not user:
         return await message.answer(
             "❌ people is not found"
-        )
+        ) # человек не найден 
 
     user_id = user[0]
 
@@ -768,28 +775,28 @@ async def remove_points(message: types.Message):
         ELSE points - ?
     END
     WHERE user_id = ?
-    """, (amount, amount, user_id))
+    """, (amount, amount, user_id)) # если не хватает то будит 0 не будит уходить в -1...
 
-    conn.commit()
+    conn.commit() #сохраняет 
 
     try:
         await bot.send_message(
     user_id,
     t(user_id, "admin_remove").format(amount=amount)
-)
+) # текст
     except:
         pass
 
     await message.answer(
         f"➖ removed {amount} 🧊 from {username}"
-    )
+    )  # текст админу и у кого снял 
 
 
-@dp.message(Command("cleartop"))
+@dp.message(Command("cleartop"))                 # запуск с команды / 
 async def clear_top(message: types.Message):
 
     if not is_admin(message.from_user.id):
-        return
+        return 
 
     cursor.execute("UPDATE users SET points = 0")
     conn.commit()
@@ -802,11 +809,11 @@ async def clear_top(message: types.Message):
             await bot.send_message(
                 user[0],
                 t(user[0], "top_cleared_global")
-            )
+            ) # текст 
         except:
             pass 
         
-@dp.message(Command("givex2"))
+@dp.message(Command("givex2"))                   # запуск с команды /
 async def give_x2(message: types.Message):
 
     if not is_admin(message.from_user.id):
@@ -827,7 +834,7 @@ async def give_x2(message: types.Message):
     if not user:
         return await message.answer(
             "❌ people is not found"
-        )
+        ) # не найден 
 
     user_id = user[0]
 
@@ -837,52 +844,52 @@ async def give_x2(message: types.Message):
         await bot.send_message(
     user_id,
     t(user_id, "admin_x2").format(minutes=minutes)
-)
+) # текст
     except:
         pass
 
     await message.answer(
         f"❄️ x2 ice gived {username}\n"
         f"⏳ for {minutes} min"
-    )
+    ) #   показывает админу и юзеру когда он дает 2х 
 
-@dp.message(Command("givex2all"))
+@dp.message(Command("givex2all"))                     # запуск с команды /
 async def givex2_all(message: types.Message):
 
     if not is_admin(message.from_user.id):
-        return
+        return # если не админ то не даст активироватся 
 
     args = message.text.split()
 
     if len(args) < 2:
-        return await message.answer("/givex2all MINUTE")
+        return await message.answer("/givex2all MINUTE")     # пишет пример 
 
     minutes = int(args[1])
-    expire_time = time.time() + minutes * 60
+    expire_time = time.time() + minutes * 60  # максимальное количество минут 
 
     cursor.execute("SELECT user_id FROM users")
-    users = cursor.fetchall()
+    users = cursor.fetchall()     # база игроков 
 
     for user in users:
         user_id = user[0]
-        double_ice_users[user_id] = expire_time
-
+        double_ice_users[user_id] = expire_time # проверка есть ли 2х опыт 
+        
         try:
             await bot.send_message(
                 user_id,
                 t(user_id, "x2 for everyone!").format(minutes=minutes)
-            )
+            ) # текст глобал 
         except:
             pass
 
     await message.answer(f"❄️ x2 for everyone {minutes} minute")
-    
+    # текст админу 
 # ------------------ RUN ------------------
 
-async def main():
+async def main():                 
     asyncio.create_task(background())
     await dp.start_polling(bot)
 
 
-if __name__ == "__main__":
+if __name__ == "__main__":        # запуск 
     asyncio.run(main())
